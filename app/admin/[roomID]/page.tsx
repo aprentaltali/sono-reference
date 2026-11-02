@@ -11,25 +11,30 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!roomID) return;
 
-    // Dynamically load PeerJS on the client side only
     import('peerjs').then(({ default: Peer }) => {
       const peer = new Peer();
 
       peer.on('open', () => {
-        setTimeout(() => {
-          const call = peer.call(`client-${roomID}`, new MediaStream());
-          if (call) {
-            call.on('stream', (remoteStream) => {
-              if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = remoteStream;
-                setConnected(true);
-              }
-            });
+        // Ping the client room after 1.5 seconds to establish connection
+        const interval = setInterval(() => {
+          if (!connected) {
+            const call = peer.call(`client-${roomID}`, new MediaStream());
+            if (call) {
+              call.on('stream', (remoteStream) => {
+                if (remoteVideoRef.current) {
+                  remoteVideoRef.current.srcObject = remoteStream;
+                  setConnected(true);
+                  clearInterval(interval);
+                }
+              });
+            }
           }
-        }, 2000);
+        }, 3000);
+
+        return () => clearInterval(interval);
       });
     });
-  }, [roomID]);
+  }, [roomID, connected]);
 
   return (
     <div style={{ backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
