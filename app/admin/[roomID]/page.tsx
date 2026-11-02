@@ -1,30 +1,33 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Peer from 'peerjs';
 
 export default function AdminDashboard() {
   const params = useParams();
-  const roomID = params.roomID as string;
+  const roomID = params?.roomID as string;
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const peer = new Peer();
+    if (!roomID) return;
 
-    peer.on('open', () => {
-      // Automatically call the client running on this session ID
-      setTimeout(() => {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).catch(() => {}); // dummy call to unlock media if needed
-        const call = peer.call(`client-${roomID}`, (window as any).localStream || new MediaStream());
-        
-        call.on('stream', (remoteStream) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream;
-            setConnected(true);
+    // Dynamically load PeerJS on the client side only
+    import('peerjs').then(({ default: Peer }) => {
+      const peer = new Peer();
+
+      peer.on('open', () => {
+        setTimeout(() => {
+          const call = peer.call(`client-${roomID}, new MediaStream()`);
+          if (call) {
+            call.on('stream', (remoteStream) => {
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStream;
+                setConnected(true);
+              }
+            });
           }
-        });
-      }, 2000); // Wait 2 seconds for client to load
+        }, 2000);
+      });
     });
   }, [roomID]);
 
