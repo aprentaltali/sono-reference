@@ -17,7 +17,7 @@ export default function AdminDashboard() {
 
       peer.on('open', () => {
         setTimeout(() => {
-          const call = peer.call(`client-${roomID}, new MediaStream()`);
+          const call = peer.call(`client-${roomID}`, new MediaStream());
           if (call) {
             call.on('stream', (remoteStream) => {
               if (remoteVideoRef.current) {
